@@ -3,11 +3,10 @@ predict.mvVCM <- function(object,Xnew,Znew=NULL){
   n <- nrow(Xnew)
   q <- nrow(object$beta0)
 
-  if(n!=nrow(Znew)) stop("Inputs X and Z do not match.")
-
   if(is.null(Znew)) {
     Znew <- matrix(1,n,1)
   } else {
+    if(n!=nrow(Znew)) stop("Inputs X and Z do not match.")
     Znew <- cbind(1,Znew)
   }
 
@@ -26,11 +25,32 @@ predict.VCM <- function(object,Xnew,Znew=NULL){
   n <- nrow(Xnew)
   q <- nrow(object$beta0)
 
-  if(n!=nrow(Znew)) stop("Inputs X and Z do not match.")
+  if(is.null(Znew)) {
+    Znew <- matrix(1,n,1)
+  } else {
+    if(n!=nrow(Znew)) stop("Inputs X and Z do not match.")
+    Znew <- cbind(1,Znew)
+  }
+
+  if(q!=ncol(Znew)) stop("Inputs arguments object and Z are not compatible.")
+
+  y_hat <- Znew%*%object$beta0 + Xnew%*%object$mu
+
+  return(y_hat)
+}
+
+
+
+
+predict.VCMgc <- function(object,Xnew,Znew=NULL){
+  n <- nrow(Xnew)
+  q <- length(object$beta0)
+
 
   if(is.null(Znew)) {
     Znew <- matrix(1,n,1)
   } else {
+    if(n!=nrow(Znew)) stop("Inputs X and Z do not match.")
     Znew <- cbind(1,Znew)
   }
 

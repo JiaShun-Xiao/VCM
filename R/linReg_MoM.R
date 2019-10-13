@@ -4,8 +4,12 @@ linReg_MoM <- function(X,y,Z=NULL){
   n <- length(y)
 
   ym <- mean(y)
-  X <- scale(X)/sqrt(p)
+  Xm <- colMeans(X)
+  X <- scale(X,center = T,scale = F)  # centerize X
+  Xsd <- sqrt(colMeans(X^2))
+  X <- t(t(X)/Xsd)/sqrt(p)  # scale X
   K <- X %*% t(X)
+  y0 <- y
 
   if(is.null(Z)){
     Z <- matrix(1,n,1)
@@ -45,6 +49,17 @@ linReg_MoM <- function(X,y,Z=NULL){
     covB[2,2] <- sum(MS^2) * 2
     covB[1,2] <- covB[2,1] <- sum(MKMS*MS) * 2
   }
+  Omega <- sigma[1]*K
+  diag(Omega) <- diag(Omega) + sigma[2]
+
+  inv_Omega <- chol2inv(chol(Omega))
+  # recover beta0 and mu
+  beta0 <- solve(t(Z)%*%inv_Omega%*%Z,t(Z)%*%(inv_Omega%*%y0))
+  mu <- sigma[1]*t(X)%*%(inv_Omega%*%(y0-Z%*%beta0))
+
+  # re-scale beta0 and mu
+  mu <- mu/Xsd/sqrt(p)
+  beta0[1] <- beta0[1] - colSums(mu*Xm)
 
   # Sandwich estimator
   covSig <- invS %*% covB %*% invS
@@ -59,7 +74,7 @@ linReg_MoM <- function(X,y,Z=NULL){
   gh <- c(se2*(n-q)*trK/var_total^2, -sb2*(n-q)*trK/var_total^2)
   se_h <- sqrt(t(gh) %*% covSig %*% gh)
 
-  ret <- list(sb2=sb2, se2=se2, K=K, covSig=covSig, h=h, se_h=se_h)
+  ret <- list(beta0=beta0, sb2=sb2, se2=se2, mu=mu, K=K, covSig=covSig, h=h, se_h=se_h, S=S, c=c)
 
   class(ret) <- c("VCM","MoM")
   ret
